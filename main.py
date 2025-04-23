@@ -43,9 +43,10 @@ if uploaded_file:
     # Calcular os ponderados
     df["Ponderado M1"] = (df["TPV PARCELADO M1"] * 2) + (df["TPV CRÉDITO M1"] * 1) + (df["TPV DÉBITO M1"] * 0.5)
     df["Ponderado M2"] = (df["TPV PARCELADO M2"] * 2) + (df["TPV CRÉDITO M2"] * 1) + (df["TPV DÉBITO M2"] * 0.5)
-    df["Ponderado M1 Projetado"] = (df["Ponderado M1"] / 14) * 30 
-    df["Ponderado M2 Projetado"] = (df["Ponderado M2"] / 14) * 30 
-    df["Ponderado Média"] = (df["Ponderado M1"] + df["Ponderado M2"]) / 2
+    df["Ponderado M1 Projetado"] = (df["Ponderado M1"] / 22) * 30 
+    df["Ponderado M2 Projetado"] = (df["Ponderado M2"] / 22) * 30 
+    df["Ponderado para Fevereiro"] = ((df["Ponderado M1"] + df["Ponderado M2 Projetado"]) / 2) * 0.95
+    df["Ponderado Média"] = ((df["Ponderado M1"] + df["Ponderado M2"]) / 2) * 0.95
     
 
     # FILTRAR A PARTIR DE OUTUBRO
@@ -55,12 +56,14 @@ if uploaded_file:
     df["RV_FORTSUN_Media"] = df.apply(lambda row: calcular_rv(row["TIPO_DOC"], row["Ponderado Média"]), axis=1)
     summary_media = df.groupby("Ano-Mês")["RV_FORTSUN_Media"].sum().reset_index()
 
-    # Gráfico 2 - Fevereiro com Ponderado M1, e os outros com Ponderado Média
+    # Gráfico 2 - Fevereiro com Ponderado M1 e Projetado M2, e os outros com Ponderado Média e Março com projetado do M1
+
+
     def calc_rv_condicional(row):
         if row["Ano-Mês"].endswith("-03"):
             return calcular_rv(row["TIPO_DOC"], row["Ponderado M1 Projetado"])
         elif row["Ano-Mês"].endswith("-02"):
-            return calcular_rv(row["TIPO_DOC"], row["Ponderado M2 Projetado"])
+            return calcular_rv(row["TIPO_DOC"], row["Ponderado para Fevereiro"])
         else:
             return calcular_rv(row["TIPO_DOC"], row["Ponderado Média"])
 
@@ -83,7 +86,7 @@ if uploaded_file:
     st.pyplot(fig1)
 
     # GRÁFICO 2
-    st.subheader("Total de RV_FORTSUN por Mês - Fevereiro com Ponderado M1")
+    st.subheader("Total de RV_FORTSUN por Mês - Fevereiro com Ponderado M1 e Projetado M2 E Março Ponderado M1")
     fig2, ax2 = plt.subplots(figsize=(12, 5))
     norm2 = plt.Normalize(summary_condicional["RV_FORTSUN_Condicional"].min(), summary_condicional["RV_FORTSUN_Condicional"].max())
     colors2 = plt.cm.Oranges(norm2(summary_condicional["RV_FORTSUN_Condicional"]))
@@ -93,7 +96,7 @@ if uploaded_file:
         ax2.text(bar.get_x() + bar.get_width()/2, yval, f"{yval:,.2f}", ha='center', va='bottom', fontsize=10, fontweight="bold")
     ax2.set_xlabel("Mês")
     ax2.set_ylabel("Total RV_FORTSUN")
-    ax2.set_title("Total de RV_FORTSUN por Mês (Fevereiro com Ponderado M1)")
+    ax2.set_title("Total de RV_FORTSUN por Mês (Fevereiro com Ponderado M1 e Proj Pond M2)")
     ax2.tick_params(axis="x", rotation=45)
     st.pyplot(fig2)
 
@@ -129,3 +132,4 @@ if uploaded_file:
         file_name="Relatorio_RV_FORTSUN_Analise.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+    
